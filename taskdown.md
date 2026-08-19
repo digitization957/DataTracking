@@ -8,3 +8,6 @@
 - Hardened Web.config (request size limits) for file upload support; all data/UI logic uses plain HTML/JS/AJAX + WebMethods only, no MVC controllers.
 - Added Database/schema.sql with the real table design (Users, Categories, Subjects, Tags, Records, RecordFiles, RecordTags, SubjectTags).
 - Published two Claude artifacts: a schema/flow reference sheet, and a fully clickable Login → Dashboard → Upload demo of the whole app.
+- Simplified to a single role: removed the Role dropdown from Login and all role branching from Dashboard/Upload.
+- Added Repository.aspx: filterable file/log browser (department/category/subject/tags/date), with inline PDF/image preview, .msg served for direct Outlook open, and download for Office files.
+- Added FileHandler.ashx to stream stored files securely (record/file validated against records.json, GUID-based paths, no path traversal).

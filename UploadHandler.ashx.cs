@@ -30,7 +30,6 @@ namespace DataTracking
                 var request = context.Request;
 
                 string token = request.Form["token"];
-                string role = request.Form["role"];
                 string department = request.Form["department"];
                 string category = request.Form["category"];
                 string subCategory = request.Form["subCategory"];
@@ -93,7 +92,6 @@ namespace DataTracking
                 {
                     ["id"] = recordId,
                     ["token"] = token,
-                    ["role"] = role,
                     ["department"] = department,
                     ["category"] = category,
                     ["subCategory"] = subCategory,

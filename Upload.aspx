@@ -29,6 +29,7 @@
             <div>Data Tracking</div>
             <div>
                 <span id="lblUser"></span>
+                <a href="Repository.aspx" class="btn btn-sm btn-outline-light ms-2">Repository</a>
                 <a href="Dashboard.aspx" class="btn btn-sm btn-outline-light ms-2">Dashboard</a>
             </div>
         </div>
@@ -103,7 +104,7 @@
             if (!jwt) { window.location.href = "Login.aspx"; return null; }
             try {
                 var parts = b64Decode(jwt).split("|");
-                return { token: parts[0], role: parts[1] };
+                return { token: parts[0] };
             } catch (ex) {
                 window.location.href = "Login.aspx";
                 return null;
@@ -124,7 +125,7 @@
         $(function () {
             var auth = requireAuth();
             if (!auth) return;
-            $("#lblUser").text(auth.role);
+            $("#lblUser").text(auth.token);
 
             $.getJSON("Upload.aspx/GetCategories", {}).done(function () {});
 
@@ -307,7 +308,6 @@
 
                 var fd = new FormData();
                 fd.append("token", auth.token);
-                fd.append("role", auth.role);
                 fd.append("department", $("#ddl1 option:selected").text());
                 fd.append("category", $("#ddl2 option:selected").text());
                 fd.append("subCategory", $("#ddl3 option:selected").text());

@@ -22,18 +22,8 @@
                 <label class="form-label">Token</label>
                 <input type="text" id="txtToken" class="form-control" maxlength="100" placeholder="Enter your token" autocomplete="off" />
             </div>
-            <div class="mb-3">
-                <label class="form-label">Role</label>
-                <select id="ddlRole" class="form-select">
-                    <option value="">-- Select Role --</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Employee">Employee</option>
-                    <option value="Viewer">Viewer</option>
-                </select>
-            </div>
             <button type="button" id="btnLogin" class="btn btn-primary w-100">Login</button>
-            <div class="err-msg" id="errMsg">Please enter token and select a role.</div>
+            <div class="err-msg" id="errMsg">Please enter your token.</div>
         </div>
     </form>
 
@@ -46,19 +36,17 @@
         $(function () {
             $("#btnLogin").on("click", function () {
                 var token = $.trim($("#txtToken").val());
-                var role = $("#ddlRole").val();
 
-                if (!token || !role) {
+                if (!token) {
                     $("#errMsg").show();
                     return;
                 }
                 $("#errMsg").hide();
 
-                var payload = token + "|" + role + "|" + Date.now();
+                var payload = token + "|" + Date.now();
                 var jwt = b64Encode(payload);
 
                 sessionStorage.setItem("dt_token", token);
-                sessionStorage.setItem("dt_role", role);
                 sessionStorage.setItem("dt_jwt", jwt);
 
                 window.location.href = "Dashboard.aspx?jwt=" + encodeURIComponent(jwt);
