@@ -1,0 +1,6 @@
+{
+  "TOK-1001": { "name": "Rahul Sharma", "department": "Finance", "email": "rahul.sharma@company.com" },
+  "TOK-1002": { "name": "Priya Singh", "department": "HR", "email": "priya.singh@company.com" },
+  "TOK-1003": { "name": "Amit Verma", "department": "Legal", "email": "amit.verma@company.com" },
+  "TOK-1004": { "name": "Sneha Patel", "department": "Operations", "email": "sneha.patel@company.com" }
+}
