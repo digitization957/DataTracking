@@ -6,3 +6,5 @@
 - Added UploadHandler.ashx to validate & save files (extension whitelist, size limit, GUID filenames) and persist record/subject/tag metadata to JSON files in App_Data.
 - Added Helpers/JsonStore.cs for reading/writing JSON data files.
 - Hardened Web.config (request size limits) for file upload support; all data/UI logic uses plain HTML/JS/AJAX + WebMethods only, no MVC controllers.
+- Added Database/schema.sql with the real table design (Users, Categories, Subjects, Tags, Records, RecordFiles, RecordTags, SubjectTags).
+- Published two Claude artifacts: a schema/flow reference sheet, and a fully clickable Login → Dashboard → Upload demo of the whole app.
