@@ -1,76 +1,94 @@
 /* ============================================================
-   DataTracking - Database Schema (SQL Server)
+   DataTracking - Database Schema (Azure Database for MySQL)
+   Target: the "AppDb" database (separate from the org's LoginDb,
+   which owns login_tokenpass and is not created here).
    Replaces the dummy App_Data/*.json files used in the demo.
    ============================================================ */
 
 CREATE TABLE Users (
-    UserId          INT IDENTITY(1,1)   PRIMARY KEY,
-    Token           NVARCHAR(100)       NOT NULL UNIQUE,
-    Name            NVARCHAR(200)       NOT NULL,
-    Department      NVARCHAR(100)       NULL,
-    Email           NVARCHAR(200)       NULL,
-    DefaultRole     NVARCHAR(50)        NULL,
-    IsActive        BIT                 NOT NULL DEFAULT (1),
-    CreatedOn       DATETIME2           NOT NULL DEFAULT SYSUTCDATETIME()
-);
+    UserId          INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Token           VARCHAR(100)    NOT NULL,
+    Name            VARCHAR(200)    NOT NULL,
+    Department      VARCHAR(100)    NULL,
+    Email           VARCHAR(200)    NULL,
+    DefaultRole     VARCHAR(50)     NULL,
+    IsActive        TINYINT(1)      NOT NULL DEFAULT 1,
+    CreatedOn       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY UQ_Users_Token (Token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE Categories (
-    CategoryId      INT IDENTITY(1,1)   PRIMARY KEY,
-    ParentId        INT                 NULL REFERENCES Categories(CategoryId),
-    Level           TINYINT             NOT NULL CHECK (Level BETWEEN 1 AND 4),
-    Name            NVARCHAR(200)       NOT NULL,
-    IsActive        BIT                 NOT NULL DEFAULT (1)
-);
+    CategoryId      INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ParentId        INT UNSIGNED    NULL,
+    Level           TINYINT UNSIGNED NOT NULL,
+    Name            VARCHAR(200)    NOT NULL,
+    IsActive        TINYINT(1)      NOT NULL DEFAULT 1,
+    CONSTRAINT CHK_Categories_Level CHECK (Level BETWEEN 1 AND 4),
+    CONSTRAINT FK_Categories_Parent FOREIGN KEY (ParentId) REFERENCES Categories(CategoryId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Categories_ParentId ON Categories(ParentId);
 
 CREATE TABLE Subjects (
-    SubjectId       INT IDENTITY(1,1)   PRIMARY KEY,
-    SubjectText     NVARCHAR(500)       NOT NULL UNIQUE,
-    CreatedOn       DATETIME2           NOT NULL DEFAULT SYSUTCDATETIME()
-);
+    SubjectId       INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    SubjectText     VARCHAR(500)    NOT NULL,
+    CreatedOn       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY UQ_Subjects_SubjectText (SubjectText)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Subjects_SubjectText ON Subjects(SubjectText);
 
 CREATE TABLE Tags (
-    TagId           INT IDENTITY(1,1)   PRIMARY KEY,
-    TagName         NVARCHAR(100)       NOT NULL UNIQUE
-);
+    TagId           INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    TagName         VARCHAR(100)    NOT NULL,
+    UNIQUE KEY UQ_Tags_TagName (TagName)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Tags_TagName ON Tags(TagName);
 
 -- tags historically used with a subject -> powers "related tags" suggestions
 CREATE TABLE SubjectTags (
-    SubjectId       INT                 NOT NULL REFERENCES Subjects(SubjectId),
-    TagId           INT                 NOT NULL REFERENCES Tags(TagId),
-    PRIMARY KEY (SubjectId, TagId)
-);
+    SubjectId       INT UNSIGNED    NOT NULL,
+    TagId           INT UNSIGNED    NOT NULL,
+    PRIMARY KEY (SubjectId, TagId),
+    CONSTRAINT FK_SubjectTags_Subject FOREIGN KEY (SubjectId) REFERENCES Subjects(SubjectId),
+    CONSTRAINT FK_SubjectTags_Tag FOREIGN KEY (TagId) REFERENCES Tags(TagId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE Records (
-    RecordId            UNIQUEIDENTIFIER   PRIMARY KEY DEFAULT NEWID(),
-    UserId               INT                NOT NULL REFERENCES Users(UserId),
-    DepartmentCategoryId INT                NULL REFERENCES Categories(CategoryId),  -- level 1
-    CategoryId            INT               NULL REFERENCES Categories(CategoryId),  -- level 2
-    SubCategoryId         INT               NULL REFERENCES Categories(CategoryId),  -- level 3
-    TypeCategoryId         INT              NULL REFERENCES Categories(CategoryId),  -- level 4
-    SubjectId            INT                NOT NULL REFERENCES Subjects(SubjectId),
-    Remark               NVARCHAR(MAX)      NULL,
-    CreatedOn            DATETIME2          NOT NULL DEFAULT SYSUTCDATETIME()
-);
+    RecordId              CHAR(32)      NOT NULL PRIMARY KEY,   -- GUID, hex-only (no dashes)
+    UserId                INT UNSIGNED  NOT NULL,
+    DepartmentCategoryId  INT UNSIGNED  NULL,  -- level 1
+    CategoryId             INT UNSIGNED  NULL,  -- level 2
+    SubCategoryId          INT UNSIGNED  NULL,  -- level 3
+    TypeCategoryId          INT UNSIGNED NULL,  -- level 4
+    SubjectId              INT UNSIGNED  NOT NULL,
+    Remark                 TEXT          NULL,
+    CreatedOn              DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT FK_Records_User FOREIGN KEY (UserId) REFERENCES Users(UserId),
+    CONSTRAINT FK_Records_Dept FOREIGN KEY (DepartmentCategoryId) REFERENCES Categories(CategoryId),
+    CONSTRAINT FK_Records_Cat FOREIGN KEY (CategoryId) REFERENCES Categories(CategoryId),
+    CONSTRAINT FK_Records_SubCat FOREIGN KEY (SubCategoryId) REFERENCES Categories(CategoryId),
+    CONSTRAINT FK_Records_Type FOREIGN KEY (TypeCategoryId) REFERENCES Categories(CategoryId),
+    CONSTRAINT FK_Records_Subject FOREIGN KEY (SubjectId) REFERENCES Subjects(SubjectId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Records_SubjectId ON Records(SubjectId);
 CREATE INDEX IX_Records_UserId ON Records(UserId);
 CREATE INDEX IX_Records_CreatedOn ON Records(CreatedOn);
 
 CREATE TABLE RecordFiles (
-    FileId          INT IDENTITY(1,1)   PRIMARY KEY,
-    RecordId        UNIQUEIDENTIFIER    NOT NULL REFERENCES Records(RecordId),
-    OriginalName    NVARCHAR(300)       NOT NULL,
-    StoredName      NVARCHAR(300)       NOT NULL,   -- GUID-based name on disk, prevents path traversal
-    FileExtension   NVARCHAR(20)        NOT NULL,
-    FileSizeBytes   BIGINT              NOT NULL,
-    UploadedOn      DATETIME2           NOT NULL DEFAULT SYSUTCDATETIME()
-);
+    FileId          INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RecordId        CHAR(32)        NOT NULL,
+    OriginalName    VARCHAR(300)    NOT NULL,
+    StoredName      VARCHAR(300)    NOT NULL,   -- GUID-based name on disk, prevents path traversal
+    FileExtension   VARCHAR(20)     NOT NULL,
+    FileSizeBytes   BIGINT UNSIGNED NOT NULL,
+    UploadedOn      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT FK_RecordFiles_Record FOREIGN KEY (RecordId) REFERENCES Records(RecordId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_RecordFiles_RecordId ON RecordFiles(RecordId);
 
 CREATE TABLE RecordTags (
-    RecordId        UNIQUEIDENTIFIER    NOT NULL REFERENCES Records(RecordId),
-    TagId           INT                 NOT NULL REFERENCES Tags(TagId),
-    PRIMARY KEY (RecordId, TagId)
-);
+    RecordId        CHAR(32)        NOT NULL,
+    TagId           INT UNSIGNED    NOT NULL,
+    PRIMARY KEY (RecordId, TagId),
+    CONSTRAINT FK_RecordTags_Record FOREIGN KEY (RecordId) REFERENCES Records(RecordId),
+    CONSTRAINT FK_RecordTags_Tag FOREIGN KEY (TagId) REFERENCES Tags(TagId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
