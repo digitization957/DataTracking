@@ -6,102 +6,79 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repository - Data Tracking</title>
-    <link href="Content/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background: #f2f4f7; }
-        .topbar { background: #212529; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .card-box { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin: 20px; }
-        .suggest-box { position: relative; }
-        .suggest-list { position: absolute; z-index: 20; background: #fff; border: 1px solid #ddd; width: 100%; max-height: 200px; overflow-y: auto; display: none; border-radius: 0 0 6px 6px; }
-        .suggest-list div { padding: 6px 10px; cursor: pointer; }
-        .suggest-list div:hover { background: #f0f0f0; }
-        .tag-chip { display: inline-flex; align-items: center; background: #0d6efd; color: #fff; border-radius: 14px; padding: 3px 10px; margin: 3px 4px 3px 0; font-size: 13px; }
-        .tag-chip .rm { cursor: pointer; margin-left: 6px; font-weight: bold; }
-        .rec-row { border-bottom: 1px solid #e9ecef; padding: 14px 0; }
-        .rec-row:last-child { border-bottom: none; }
-        .rec-subject { font-weight: 600; }
-        .rec-path { font-size: 12px; color: #6c757d; }
-        .mini-tag { display: inline-block; background: #eef1f4; border-radius: 10px; padding: 1px 8px; margin: 0 4px 4px 0; font-size: 11px; }
-        .file-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #dee2e6; border-radius: 16px; padding: 4px 10px; margin: 3px 6px 3px 0; font-size: 12px; background: #fafbfc; text-decoration: none; color: #212529; }
-        .file-pill:hover { border-color: #0d6efd; color: #0d6efd; }
-        .file-ext { font-size: 10px; text-transform: uppercase; color: #6c757d; }
-        .empty-note { color: #6c757d; padding: 20px 0; }
-
-        .preview-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .preview-overlay.show { display: flex; }
-        .preview-box { background: #fff; border-radius: 6px; width: min(900px, 92vw); height: min(85vh, 900px); display: flex; flex-direction: column; overflow: hidden; }
-        .preview-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #e9ecef; }
-        .preview-head button { border: none; background: none; font-size: 20px; cursor: pointer; line-height: 1; }
-        .preview-body { flex: 1; overflow: auto; background: #333; display: flex; align-items: center; justify-content: center; }
-        .preview-body iframe { width: 100%; height: 100%; border: none; background: #fff; }
-        .preview-body img { max-width: 100%; max-height: 100%; }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link href="Content/tokens.css" rel="stylesheet" />
+    <link href="Content/app.css" rel="stylesheet" />
 </head>
 <body>
     <form id="form1" runat="server">
         <div class="topbar">
-            <div>Data Tracking</div>
-            <div>
-                <span id="lblUser"></span>
-                <a href="Upload.aspx" class="btn btn-sm btn-outline-light ms-2">Upload</a>
-                <a href="Dashboard.aspx" class="btn btn-sm btn-outline-light ms-2">Dashboard</a>
+            <div class="topbar-brand"><div class="topbar-mark">DT</div><span>Data Tracking</span></div>
+            <div class="topbar-right">
+                <div class="topbar-nav">
+                    <a href="Dashboard.aspx">Dashboard</a>
+                    <a href="Upload.aspx">Upload</a>
+                    <a href="Repository.aspx" aria-current="page">Repository</a>
+                </div>
+                <span class="user-chip" id="lblUser"></span>
             </div>
         </div>
 
-        <div class="card-box">
-            <h4>Repository</h4>
-
-            <div class="row g-2 mb-2">
-                <div class="col-md-3">
-                    <label class="form-label">Department</label>
-                    <select id="ddl1" class="form-select"><option value="">-- Any --</option></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Category</label>
-                    <select id="ddl2" class="form-select" disabled><option value="">-- Any --</option></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Sub-Category</label>
-                    <select id="ddl3" class="form-select" disabled><option value="">-- Any --</option></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Type</label>
-                    <select id="ddl4" class="form-select" disabled><option value="">-- Any --</option></select>
-                </div>
+        <div class="app-content">
+            <div class="panel-head" style="margin-bottom:var(--space-lg);">
+                <h2>Repository</h2>
+                <p class="lead">Filter across department, subject, tags and date.</p>
             </div>
 
-            <div class="row g-2 mb-2">
-                <div class="col-md-4">
-                    <label class="form-label">Subject contains</label>
-                    <input type="text" id="txtSubject" class="form-control" autocomplete="off" />
+            <div class="browser-layout">
+                <div class="panel filter-rail">
+                    <div class="field" style="margin-bottom:var(--space-sm);">
+                        <label>Department</label>
+                        <select id="ddl1"><option value="">-- Any --</option></select>
+                    </div>
+                    <div class="field" style="margin-bottom:var(--space-sm);">
+                        <label>Category</label>
+                        <select id="ddl2" disabled><option value="">-- Any --</option></select>
+                    </div>
+                    <div class="field" style="margin-bottom:var(--space-sm);">
+                        <label>Sub-Category</label>
+                        <select id="ddl3" disabled><option value="">-- Any --</option></select>
+                    </div>
+                    <div class="field" style="margin-bottom:var(--space-md);">
+                        <label>Type</label>
+                        <select id="ddl4" disabled><option value="">-- Any --</option></select>
+                    </div>
+
+                    <div class="field" style="margin-bottom:var(--space-sm);">
+                        <label>Subject contains</label>
+                        <input type="text" id="txtSubject" autocomplete="off" />
+                    </div>
+                    <div class="field" style="margin-bottom:var(--space-sm);">
+                        <label>From date</label>
+                        <input type="date" id="txtFrom" />
+                    </div>
+                    <div class="field" style="margin-bottom:var(--space-md);">
+                        <label>To date</label>
+                        <input type="date" id="txtTo" />
+                    </div>
+
+                    <div class="field suggest-box" style="margin-bottom:var(--space-lg);">
+                        <label>Tags</label>
+                        <input type="text" id="txtTagFilter" autocomplete="off" placeholder="Type to add a tag filter" />
+                        <div class="suggest-list" id="tagSuggest"></div>
+                        <div id="tagChips" style="margin-top:var(--space-xs);"></div>
+                    </div>
+
+                    <button type="button" id="btnSearch" class="btn btn-primary" style="width:100%;justify-content:center;">Search</button>
+                    <button type="button" id="btnClear" class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:var(--space-xs);">Clear filters</button>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">From date</label>
-                    <input type="date" id="txtFrom" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">To date</label>
-                    <input type="date" id="txtTo" class="form-control" />
+
+                <div class="panel">
+                    <div id="resultCount" class="mono" style="color:var(--color-muted);font-size:var(--text-xs);margin-bottom:var(--space-sm);"></div>
+                    <div id="results"></div>
+                    <div class="empty-note" id="emptyNote" style="display:none;">No records match these filters.</div>
                 </div>
             </div>
-
-            <div class="row g-2 mb-3">
-                <div class="col-md-6 suggest-box">
-                    <label class="form-label">Tags</label>
-                    <input type="text" id="txtTagFilter" class="form-control" autocomplete="off" placeholder="Type to add a tag filter" />
-                    <div class="suggest-list" id="tagSuggest"></div>
-                    <div id="tagChips" class="mt-2"></div>
-                </div>
-            </div>
-
-            <button type="button" id="btnSearch" class="btn btn-primary">Search</button>
-            <button type="button" id="btnClear" class="btn btn-outline-secondary ms-2">Clear filters</button>
-        </div>
-
-        <div class="card-box">
-            <div id="resultCount" class="text-muted small mb-2"></div>
-            <div id="results"></div>
-            <div class="empty-note" id="emptyNote" style="display:none;">No records match these filters.</div>
         </div>
     </form>
 

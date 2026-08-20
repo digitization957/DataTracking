@@ -6,24 +6,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Data Tracking</title>
-    <link href="Content/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background: #f2f4f7; }
-        .login-box { max-width: 380px; margin: 80px auto; padding: 30px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        .login-box h3 { margin-bottom: 20px; }
-        .err-msg { color: #c0392b; font-size: 13px; margin-top: 8px; display: none; }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link href="Content/tokens.css" rel="stylesheet" />
+    <link href="Content/app.css" rel="stylesheet" />
 </head>
 <body>
     <form id="form1" runat="server">
-        <div class="login-box">
-            <h3>Data Tracking Login</h3>
-            <div class="mb-3">
-                <label class="form-label">Token</label>
-                <input type="text" id="txtToken" class="form-control" maxlength="100" placeholder="Enter your token" autocomplete="off" />
+        <div class="auth-shell">
+            <div class="auth-card">
+                <div class="auth-brand">
+                    <div class="topbar-mark">DT</div>
+                    <span style="font-family:var(--font-display);font-weight:700;">Data Tracking</span>
+                </div>
+                <h1>Sign in with your token</h1>
+                <p class="sub">Internal document &amp; repository access</p>
+                <div class="field">
+                    <label for="txtToken">Token</label>
+                    <input type="text" id="txtToken" maxlength="100" placeholder="e.g. TOK-1001" autocomplete="off" />
+                </div>
+                <button type="button" id="btnLogin" class="btn btn-primary" style="width:100%;margin-top:var(--space-md);justify-content:center;">Login</button>
+                <div class="field-hint is-error" id="errMsg" style="display:none;margin-top:var(--space-sm);">Please enter your token.</div>
             </div>
-            <button type="button" id="btnLogin" class="btn btn-primary w-100">Login</button>
-            <div class="err-msg" id="errMsg">Please enter your token.</div>
         </div>
     </form>
 

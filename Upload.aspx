@@ -6,85 +6,86 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Upload - Data Tracking</title>
-    <link href="Content/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background: #f2f4f7; }
-        .topbar { background: #212529; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .card-box { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin: 20px; max-width: 900px; }
-        .tag-chip { display: inline-flex; align-items: center; background: #0d6efd; color: #fff; border-radius: 14px; padding: 3px 10px; margin: 3px 4px 3px 0; font-size: 13px; }
-        .tag-chip .rm { cursor: pointer; margin-left: 6px; font-weight: bold; }
-        .suggest-box { position: relative; }
-        .suggest-list { position: absolute; z-index: 20; background: #fff; border: 1px solid #ddd; width: 100%; max-height: 200px; overflow-y: auto; display: none; border-radius: 0 0 6px 6px; }
-        .suggest-list div { padding: 6px 10px; cursor: pointer; }
-        .suggest-list div:hover { background: #f0f0f0; }
-        .related-tags { margin-top: 6px; }
-        .related-tags .rel-tag { cursor: pointer; background: #e9ecef; border-radius: 12px; padding: 2px 9px; font-size: 12px; margin-right: 5px; display: inline-block; margin-bottom: 4px; }
-        #fileList { margin-top: 8px; }
-        #fileList li { font-size: 13px; }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link href="Content/tokens.css" rel="stylesheet" />
+    <link href="Content/app.css" rel="stylesheet" />
 </head>
 <body>
     <form id="form1" runat="server">
         <div class="topbar">
-            <div>Data Tracking</div>
-            <div>
-                <span id="lblUser"></span>
-                <a href="Repository.aspx" class="btn btn-sm btn-outline-light ms-2">Repository</a>
-                <a href="Dashboard.aspx" class="btn btn-sm btn-outline-light ms-2">Dashboard</a>
+            <div class="topbar-brand"><div class="topbar-mark">DT</div><span>Data Tracking</span></div>
+            <div class="topbar-right">
+                <div class="topbar-nav">
+                    <a href="Dashboard.aspx">Dashboard</a>
+                    <a href="Upload.aspx" aria-current="page">Upload</a>
+                    <a href="Repository.aspx">Repository</a>
+                </div>
+                <span class="user-chip" id="lblUser"></span>
             </div>
         </div>
 
-        <div class="card-box">
-            <h4>Add Repository Item</h4>
+        <div class="app-content">
+            <div class="panel-head" style="margin-bottom:var(--space-lg);">
+                <h2>Add repository item</h2>
+                <p class="lead">Classify, tag and attach files to a new record.</p>
+            </div>
 
-            <div class="row g-2 mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Department</label>
-                    <select id="ddl1" class="form-select"><option value="">-- Select --</option></select>
+            <div class="workbench">
+                <div class="panel">
+                    <div class="grid-cols" style="margin-bottom:var(--space-md);">
+                        <div class="field">
+                            <label>Department</label>
+                            <select id="ddl1"><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Category</label>
+                            <select id="ddl2" disabled><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Sub-Category</label>
+                            <select id="ddl3" disabled><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="field">
+                            <label>Type</label>
+                            <select id="ddl4" disabled><option value="">-- Select --</option></select>
+                        </div>
+                    </div>
+
+                    <div class="field suggest-box" style="margin-bottom:var(--space-md);">
+                        <label>Subject</label>
+                        <input type="text" id="txtSubject" autocomplete="off" placeholder="Type subject..." />
+                        <div class="suggest-list" id="subjectSuggest"></div>
+                    </div>
+
+                    <div class="field">
+                        <label>Remark</label>
+                        <textarea id="txtRemark" rows="3"></textarea>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Category</label>
-                    <select id="ddl2" class="form-select" disabled><option value="">-- Select --</option></select>
+
+                <div class="panel">
+                    <div class="field" style="margin-bottom:var(--space-md);">
+                        <label>Files (up to 8: pdf, image, .msg, excel, word, ppt)</label>
+                        <input type="file" id="fileInput" multiple
+                            accept=".pdf,.jpg,.jpeg,.png,.gif,.msg,.xls,.xlsx,.doc,.docx,.ppt,.pptx" />
+                        <ul id="fileList"></ul>
+                        <div class="field-hint is-error" id="fileErr" style="display:none;"></div>
+                    </div>
+
+                    <div class="field suggest-box">
+                        <label>Tags (press Enter to add)</label>
+                        <input type="text" id="txtTag" autocomplete="off" placeholder="Type a tag and press Enter" />
+                        <div class="suggest-list" id="tagSuggest"></div>
+                        <div id="tagChips" style="margin-top:var(--space-xs);"></div>
+                        <div class="related-tags" id="relatedTags"></div>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Sub-Category</label>
-                    <select id="ddl3" class="form-select" disabled><option value="">-- Select --</option></select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Type</label>
-                    <select id="ddl4" class="form-select" disabled><option value="">-- Select --</option></select>
-                </div>
             </div>
 
-            <div class="mb-3 suggest-box">
-                <label class="form-label">Subject</label>
-                <input type="text" id="txtSubject" class="form-control" autocomplete="off" placeholder="Type subject..." />
-                <div class="suggest-list" id="subjectSuggest"></div>
+            <div style="margin-top:var(--space-lg);">
+                <button type="button" id="btnSave" class="btn btn-primary">Save record</button>
+                <span id="saveMsg" style="margin-left:var(--space-sm);font-size:var(--text-sm);"></span>
             </div>
-
-            <div class="mb-3">
-                <label class="form-label">Remark</label>
-                <textarea id="txtRemark" class="form-control" rows="2"></textarea>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Files (up to 8: pdf, image, .msg, excel, word, ppt)</label>
-                <input type="file" id="fileInput" class="form-control" multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.gif,.msg,.xls,.xlsx,.doc,.docx,.ppt,.pptx" />
-                <ul id="fileList" class="list-unstyled"></ul>
-                <div class="text-danger small" id="fileErr" style="display:none;"></div>
-            </div>
-
-            <div class="mb-3 suggest-box">
-                <label class="form-label">Tags (press Enter to add)</label>
-                <input type="text" id="txtTag" class="form-control" autocomplete="off" placeholder="Type a tag and press Enter" />
-                <div class="suggest-list" id="tagSuggest"></div>
-                <div id="tagChips" class="mt-2"></div>
-                <div class="related-tags" id="relatedTags"></div>
-            </div>
-
-            <button type="button" id="btnSave" class="btn btn-primary">Save</button>
-            <span id="saveMsg" class="ms-2"></span>
         </div>
     </form>
 

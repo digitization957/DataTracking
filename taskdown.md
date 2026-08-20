@@ -12,3 +12,4 @@
 - Added Repository.aspx: filterable file/log browser (department/category/subject/tags/date), with inline PDF/image preview, .msg served for direct Outlook open, and download for Office files.
 - Added FileHandler.ashx to stream stored files securely (record/file validated against records.json, GUID-based paths, no path traversal).
 - Rebuilt the "DataTracking Console" Claude artifact into a full clickable prototype of Login → Dashboard → Upload → Repository, including live file preview for uploaded images/PDFs.
+- Redesigned the whole app UI/UX (Hallmark): new Cobalt design system (design.md + Content/tokens.css + Content/app.css) replacing Bootstrap defaults; Login is now an auth card, Dashboard an instrument panel with real record/tag/department counts (new GetStats WebMethod), Upload a two-pane workbench, Repository a filter-rail data browser. All existing element IDs/AJAX contracts preserved untouched.

@@ -6,28 +6,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Data Tracking</title>
-    <link href="Content/bootstrap.min.css" rel="stylesheet" />
-    <style>
-        body { background: #f2f4f7; }
-        .topbar { background: #212529; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .card-box { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin: 20px; }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link href="Content/tokens.css" rel="stylesheet" />
+    <link href="Content/app.css" rel="stylesheet" />
 </head>
 <body>
     <form id="form1" runat="server">
         <div class="topbar">
-            <div>Data Tracking</div>
-            <div>
-                <span id="lblUser">Loading...</span>
-                <button type="button" id="btnLogout" class="btn btn-sm btn-outline-light ms-2">Logout</button>
+            <div class="topbar-brand"><div class="topbar-mark">DT</div><span>Data Tracking</span></div>
+            <div class="topbar-right">
+                <div class="topbar-nav">
+                    <a href="Dashboard.aspx" aria-current="page">Dashboard</a>
+                    <a href="Upload.aspx">Upload</a>
+                    <a href="Repository.aspx">Repository</a>
+                </div>
+                <span class="user-chip" id="lblUser">Loading…</span>
+                <button type="button" id="btnLogout" class="btn btn-ghost btn-sm">Logout</button>
             </div>
         </div>
 
-        <div class="card-box">
-            <h4>Welcome</h4>
-            <p id="lblWelcome">Fetching your details...</p>
-            <a href="Upload.aspx" class="btn btn-primary">Upload Files</a>
-            <a href="Repository.aspx" class="btn btn-outline-primary ms-2">Browse Repository</a>
+        <div class="app-content">
+            <div class="panel">
+                <div class="panel-head">
+                    <h2 id="lblWelcomeHead">Welcome</h2>
+                    <p class="lead" id="lblWelcome">Fetching your details…</p>
+                </div>
+                <a href="Upload.aspx" class="btn btn-primary">Upload files</a>
+                <a href="Repository.aspx" class="btn btn-outline" style="margin-left:var(--space-sm);">Browse repository</a>
+            </div>
+
+            <div class="stat-strip">
+                <div class="stat-tile"><div class="n mono" id="statRecords">—</div><div class="l">Records in repository</div></div>
+                <div class="stat-tile"><div class="n mono" id="statDepts">—</div><div class="l">Departments</div></div>
+                <div class="stat-tile"><div class="n mono" id="statTags">—</div><div class="l">Known tags</div></div>
+                <div class="stat-tile"><div class="n mono" id="statMine">—</div><div class="l">Uploaded by you</div></div>
+            </div>
         </div>
     </form>
 
@@ -80,6 +93,24 @@
                 },
                 error: function () {
                     $("#lblWelcome").text("Could not fetch user details.");
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "Dashboard.aspx/GetStats",
+                data: JSON.stringify({ token: token }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (res) {
+                    var s = JSON.parse(res.d);
+                    $("#statRecords").text(s.records);
+                    $("#statDepts").text(s.departments);
+                    $("#statTags").text(s.tags);
+                    $("#statMine").text(s.mine);
+                },
+                error: function () {
+                    $(".stat-tile .n").text("—");
                 }
             });
 
