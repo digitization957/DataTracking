@@ -253,6 +253,7 @@
       <DependentUpon>FileHandler.ashx</DependentUpon>
     </Compile>
     <Compile Include="Helpers\JsonStore.cs" />
+    <Compile Include="Helpers\LoginDb.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

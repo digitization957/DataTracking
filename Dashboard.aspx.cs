@@ -23,13 +23,28 @@ namespace DataTracking
             if (!string.IsNullOrWhiteSpace(token))
             {
                 var users = JsonStore.Read("users.json") as JObject;
-                if (users != null && users[token] != null)
+                var u = users?[token];
+
+                string name = null;
+                try
                 {
-                    var u = users[token];
+                    name = LoginDb.GetNameByToken(token);
+                }
+                catch
+                {
+                    // LoginDb connection string is a placeholder until the real Access path is set.
+                    // Fall back to the local Users record's name below.
+                }
+
+                if (name == null && u != null)
+                    name = (string)u["name"];
+
+                if (name != null)
+                {
                     result["found"] = true;
-                    result["name"] = u["name"];
-                    result["department"] = u["department"];
-                    result["email"] = u["email"];
+                    result["name"] = name;
+                    result["department"] = u?["department"];
+                    result["email"] = u?["email"];
                 }
             }
 
