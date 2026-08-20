@@ -11,3 +11,4 @@
 - Simplified to a single role: removed the Role dropdown from Login and all role branching from Dashboard/Upload.
 - Added Repository.aspx: filterable file/log browser (department/category/subject/tags/date), with inline PDF/image preview, .msg served for direct Outlook open, and download for Office files.
 - Added FileHandler.ashx to stream stored files securely (record/file validated against records.json, GUID-based paths, no path traversal).
+- Rebuilt the "DataTracking Console" Claude artifact into a full clickable prototype of Login → Dashboard → Upload → Repository, including live file preview for uploaded images/PDFs.
