@@ -82,16 +82,6 @@
         </div>
     </form>
 
-    <div class="preview-overlay" id="previewOverlay">
-        <div class="preview-box">
-            <div class="preview-head">
-                <strong id="previewTitle"></strong>
-                <button type="button" id="previewClose">&times;</button>
-            </div>
-            <div class="preview-body" id="previewBody"></div>
-        </div>
-    </div>
-
     <script src="Scripts/jquery-3.7.0.min.js"></script>
     <script>
         var categoryData = [];
@@ -274,11 +264,8 @@
                         var ext = extOf(f.originalName);
                         var pill;
                         if (INLINE_EXT.indexOf(ext) !== -1) {
-                            pill = $("<a href='#'>").addClass("file-pill").html(f.originalName + " <span class='file-ext'>" + ext + "</span>");
-                            pill.on("click", function (e) {
-                                e.preventDefault();
-                                openPreview(f.originalName, ext, fileUrl(r.id, f.storedName));
-                            });
+                            pill = $("<a>").attr("href", fileUrl(r.id, f.storedName)).attr("target", "_blank")
+                                .addClass("file-pill").html(f.originalName + " <span class='file-ext'>" + ext + "</span>");
                         } else if (ext === "msg") {
                             pill = $("<a>").attr("href", fileUrl(r.id, f.storedName)).attr("target", "_blank")
                                 .addClass("file-pill").html(f.originalName + " <span class='file-ext'>open in outlook</span>");
@@ -293,24 +280,6 @@
                     box.append(row);
                 });
             }
-
-            function openPreview(name, ext, url) {
-                $("#previewTitle").text(name);
-                var body = $("#previewBody").empty();
-                if (ext === "pdf") {
-                    body.append($("<iframe>").attr("src", url));
-                } else {
-                    body.append($("<img>").attr("src", url).attr("alt", name));
-                }
-                $("#previewOverlay").addClass("show");
-            }
-            $("#previewClose").on("click", function () {
-                $("#previewOverlay").removeClass("show");
-                $("#previewBody").empty();
-            });
-            $("#previewOverlay").on("click", function (e) {
-                if (e.target === this) { $("#previewClose").click(); }
-            });
 
             runSearch();
         });
