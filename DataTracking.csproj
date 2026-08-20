@@ -110,6 +110,7 @@
     <Content Include="UploadHandler.ashx" />
     <Content Include="Repository.aspx" />
     <Content Include="FileHandler.ashx" />
+    <Content Include="Master.aspx" />
     <Content Include="App_Data\users.json" />
     <Content Include="App_Data\categories.json" />
     <Content Include="App_Data\subjects.json" />
@@ -254,6 +255,13 @@
     </Compile>
     <Compile Include="FileHandler.ashx.cs">
       <DependentUpon>FileHandler.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="Master.aspx.cs">
+      <DependentUpon>Master.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Master.aspx.designer.cs">
+      <DependentUpon>Master.aspx</DependentUpon>
     </Compile>
     <Compile Include="Helpers\JsonStore.cs" />
     <Compile Include="Helpers\LoginDb.cs" />

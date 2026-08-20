@@ -24,7 +24,7 @@ CREATE TABLE Categories (
     Name            VARCHAR(200)    NOT NULL,
     IsActive        TINYINT(1)      NOT NULL DEFAULT 1,
     CONSTRAINT CHK_Categories_Level CHECK (Level BETWEEN 1 AND 4),
-    CONSTRAINT FK_Categories_Parent FOREIGN KEY (ParentId) REFERENCES Categories(CategoryId)
+    CONSTRAINT FK_Categories_Parent FOREIGN KEY (ParentId) REFERENCES Categories(CategoryId) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Categories_ParentId ON Categories(ParentId);
 

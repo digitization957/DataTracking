@@ -1,5 +1,5 @@
 /* Hallmark · genre: modern-minimal · theme: Cobalt · design-system: design.md · designed-as-app
- * screens: Login (auth card) · Dashboard (instrument panel) · Upload (two-pane workbench) · Repository (filter-rail browser)
+ * screens: Login (auth card) · Dashboard (instrument panel) · Upload (two-pane workbench) · Repository (filter-rail browser) · Master (cascade column manager)
  * nav: persistent bordered top-bar (daily-use tool, not a marketing ⌘K) · footer: none
  */
 
@@ -87,6 +87,28 @@ a { color: var(--color-accent); }
   content: ""; position: absolute; left: var(--space-sm); right: var(--space-sm); bottom: -1px;
   height: 2px; background: var(--color-accent); border-radius: 1px;
 }
+.nav-dropdown { position: relative; }
+.nav-dropdown-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-3xs);
+  font-family: var(--font-body); font-weight: 500; font-size: var(--text-sm); color: var(--color-muted);
+  background: none; border: none; border-radius: var(--radius-sm); padding: var(--space-xs) var(--space-sm);
+  cursor: pointer; transition: color var(--dur-short) var(--ease-out), background var(--dur-short) var(--ease-out);
+}
+.nav-dropdown-toggle:hover, .nav-dropdown.open .nav-dropdown-toggle { color: var(--color-ink); background: var(--color-paper-2); }
+.nav-dropdown-toggle.is-current { color: var(--color-ink); }
+.nav-dropdown-toggle .chev { font-size: 10px; transition: transform var(--dur-short) var(--ease-out); }
+.nav-dropdown.open .chev { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 190px;
+  background: var(--color-paper); border: 1px solid var(--color-rule); border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px -10px oklch(20% 0.02 254 / 0.18); padding: var(--space-2xs); z-index: var(--z-dropdown);
+}
+.nav-dropdown.open .nav-dropdown-menu { display: block; }
+.nav-dropdown-menu a { display: block; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
+  font-size: var(--text-sm); color: var(--color-ink); text-decoration: none; }
+.nav-dropdown-menu a:hover { background: var(--color-accent-soft); color: var(--color-accent); }
+.nav-dropdown-menu a[aria-current="page"] { color: var(--color-accent); font-weight: 600; }
+
 .topbar-right { display: flex; align-items: center; gap: var(--space-sm); }
 .user-chip {
   font-family: var(--font-mono);
@@ -337,6 +359,36 @@ a { color: var(--color-accent); }
 .browser-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--space-lg); align-items: start; }
 .filter-rail { position: sticky; top: calc(56px + var(--space-lg)); }
 @media (max-width: 768px) { .browser-layout { grid-template-columns: 1fr; } .filter-rail { position: static; } }
+
+/* ============ Master — dropdown option manager (4-level cascade) ============ */
+.master-crumb { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-md); }
+.master-crumb .seg { color: var(--color-ink); }
+
+.master-layout { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-md); align-items: start; }
+@media (max-width: 900px) { .master-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .master-layout { grid-template-columns: minmax(0, 1fr); } }
+
+.master-col { padding: var(--space-md); margin-bottom: 0; }
+.master-col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+.master-col-head h3 { font-family: var(--font-body); font-weight: 700; font-size: var(--text-xs);
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.master-col-head span { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-neutral); }
+
+.master-list { display: flex; flex-direction: column; gap: var(--space-3xs); min-height: 32px;
+  max-height: 320px; overflow-y: auto; margin-bottom: var(--space-sm); }
+.master-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); border: 1px solid transparent;
+  cursor: pointer; font-size: var(--text-sm);
+  transition: background var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
+.master-item span.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.master-item:hover { background: var(--color-paper-2); }
+.master-item.active { background: var(--color-accent-soft); border-color: var(--color-accent); color: var(--color-accent); font-weight: 600; }
+.master-item .rm { flex-shrink: 0; opacity: 0.5; font-weight: 700; padding: 0 var(--space-2xs); border-radius: var(--radius-sm); }
+.master-item .rm:hover { opacity: 1; color: var(--color-danger); background: var(--color-danger-soft); }
+.master-empty { font-size: var(--text-xs); color: var(--color-neutral); padding: var(--space-sm) var(--space-2xs); }
+
+.master-add-row { display: flex; gap: var(--space-2xs); }
+.master-add-row input { flex: 1; min-width: 0; }
 
 /* ============ Utility (class names kept for existing JS toggles) ============ */
 .text-success { color: var(--color-success); }

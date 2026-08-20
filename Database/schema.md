@@ -34,7 +34,7 @@ name, and credentials for `LoginDb` in `Web.config`.
 | Table | Purpose |
 | --- | --- |
 | `Users` | Local copy of person info keyed by `Token` (department/email/role) — used everywhere in the app *besides* the name lookup, which comes from `login_tokenpass` in LoginDb. |
-| `Categories` | 4-level department → category → sub-category → type tree. Self-referencing via `ParentId`. |
+| `Categories` | 4-level department → category → sub-category → type tree. Self-referencing via `ParentId`. Managed from the app's **Master** screen (`Master.aspx`) — admins add/delete options here instead of editing data directly; delete cascades to all descendant rows. |
 | `Subjects` | Distinct subject lines typed on Upload, reused for autocomplete. |
 | `Tags` | Master tag list, reused for autocomplete. |
 | `SubjectTags` | Tags historically used with a subject — powers "related tags" suggestions. |
@@ -63,8 +63,11 @@ this file is the narrative map; `schema.sql` is the source of truth for DDL.
 
 - Point `AppDb` at the real Azure MySQL instance and run `schema.sql` against it.
 - Migrate `Categories`/`Subjects`/`Tags`/`Records`/`RecordFiles`/`RecordTags`
-  reads and writes (`Upload.aspx.cs`, `Repository.aspx.cs`, `UploadHandler.ashx.cs`,
-  `FileHandler.ashx.cs`) from `App_Data/*.json` (`Helpers/JsonStore.cs`) to AppDb —
-  not done yet, only the login lookup has been migrated so far.
+  reads and writes (`Upload.aspx.cs`, `Repository.aspx.cs`, `Master.aspx.cs`,
+  `UploadHandler.ashx.cs`, `FileHandler.ashx.cs`) from `App_Data/*.json`
+  (`Helpers/JsonStore.cs`) to AppDb — not done yet, only the login lookup has
+  been migrated so far. `Master.aspx.cs`'s recursive delete maps to a single
+  `DELETE ... WHERE CategoryId = @id` once live, since `FK_Categories_Parent`
+  is `ON DELETE CASCADE`.
 - Point `LoginDb` at the real Azure MySQL login database and remove the
   `users.json` fallback once confirmed reachable.

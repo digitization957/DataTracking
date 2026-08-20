@@ -19,6 +19,12 @@
                     <a href="Dashboard.aspx" aria-current="page">Dashboard</a>
                     <a href="Upload.aspx">Upload</a>
                     <a href="Repository.aspx">Repository</a>
+                    <div class="nav-dropdown" id="masterNav">
+                        <button type="button" class="nav-dropdown-toggle" id="masterToggle">Master <span class="chev">&#9662;</span></button>
+                        <div class="nav-dropdown-menu">
+                            <a href="Master.aspx">Dropdown options</a>
+                        </div>
+                    </div>
                 </div>
                 <span class="user-chip" id="lblUser">Loading…</span>
                 <button type="button" id="btnLogout" class="btn btn-ghost btn-sm">Logout</button>
@@ -56,6 +62,12 @@
         }
 
         $(function () {
+            $("#masterToggle").on("click", function (e) {
+                e.stopPropagation();
+                $("#masterNav").toggleClass("open");
+            });
+            $(document).on("click", function () { $("#masterNav").removeClass("open"); });
+
             var jwt = getParam("jwt") || sessionStorage.getItem("dt_jwt");
             if (!jwt) {
                 window.location.href = "Login.aspx";

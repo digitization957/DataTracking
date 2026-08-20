@@ -19,6 +19,12 @@
                     <a href="Dashboard.aspx">Dashboard</a>
                     <a href="Upload.aspx">Upload</a>
                     <a href="Repository.aspx" aria-current="page">Repository</a>
+                    <div class="nav-dropdown" id="masterNav">
+                        <button type="button" class="nav-dropdown-toggle" id="masterToggle">Master <span class="chev">&#9662;</span></button>
+                        <div class="nav-dropdown-menu">
+                            <a href="Master.aspx">Dropdown options</a>
+                        </div>
+                    </div>
                 </div>
                 <span class="user-chip" id="lblUser"></span>
             </div>
@@ -117,6 +123,12 @@
         }
 
         $(function () {
+            $("#masterToggle").on("click", function (e) {
+                e.stopPropagation();
+                $("#masterNav").toggleClass("open");
+            });
+            $(document).on("click", function () { $("#masterNav").removeClass("open"); });
+
             var auth = requireAuth();
             if (!auth) return;
             $("#lblUser").text(auth.token);
