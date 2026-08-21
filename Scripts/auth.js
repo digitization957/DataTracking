@@ -13,10 +13,15 @@ var DTAuth = (function () {
         return JSON.parse(b64UrlDecode(segment));
     }
 
+    function tryDecode(str) {
+        if (!str) return str;
+        try { return b64UrlDecode(str); } catch (ex) { return str; }
+    }
+
     function resolve() {
         var params = new URLSearchParams(window.location.search);
-        var token = params.get("token");
-        var role = params.get("role");
+        var token = tryDecode(params.get("token"));
+        var role = tryDecode(params.get("role"));
         var jwt = params.get("jwt");
 
         if (jwt) {
