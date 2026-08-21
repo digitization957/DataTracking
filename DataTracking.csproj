@@ -111,11 +111,6 @@
     <Content Include="Repository.aspx" />
     <Content Include="FileHandler.ashx" />
     <Content Include="Master.aspx" />
-    <Content Include="App_Data\users.json" />
-    <Content Include="App_Data\categories.json" />
-    <Content Include="App_Data\subjects.json" />
-    <Content Include="App_Data\tags.json" />
-    <Content Include="App_Data\records.json" />
     <Content Include="App_Data\Uploads\.gitkeep" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
@@ -166,6 +161,7 @@
     <Content Include="Content\bootstrap-grid.min.css.map" />
     <Content Include="Content\bootstrap-grid.css.map" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
+    <Content Include="Scripts\auth.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
     <Content Include="Scripts\jquery-3.7.0.slim.js" />
@@ -263,7 +259,7 @@
     <Compile Include="Master.aspx.designer.cs">
       <DependentUpon>Master.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Helpers\JsonStore.cs" />
+    <Compile Include="Helpers\AppDb.cs" />
     <Compile Include="Helpers\LoginDb.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>

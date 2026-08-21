@@ -1,8 +1,8 @@
 using System;
-using System.Linq;
 using System.Web.Script.Services;
 using System.Web.Services;
 using DataTracking.Helpers;
+using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -22,9 +22,6 @@ namespace DataTracking
 
             if (!string.IsNullOrWhiteSpace(token))
             {
-                var users = JsonStore.Read("users.json") as JObject;
-                var u = users?[token];
-
                 string name = null;
                 try
                 {
@@ -32,19 +29,13 @@ namespace DataTracking
                 }
                 catch
                 {
-                    // LoginDb connection string is a placeholder until the real Access path is set.
-                    // Fall back to the local Users record's name below.
+                    // LoginDb connection string is a placeholder until the real Azure MySQL host is supplied.
                 }
-
-                if (name == null && u != null)
-                    name = (string)u["name"];
 
                 if (name != null)
                 {
                     result["found"] = true;
                     result["name"] = name;
-                    result["department"] = u?["department"];
-                    result["email"] = u?["email"];
                 }
             }
 
@@ -55,20 +46,41 @@ namespace DataTracking
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public static string GetStats(string token)
         {
-            var records = JsonStore.Read("records.json") as JArray ?? new JArray();
-            var categories = JsonStore.Read("categories.json") as JArray ?? new JArray();
-            var tags = JsonStore.Read("tags.json") as JArray ?? new JArray();
+            int records = 0, departments = 0, tags = 0, mine = 0;
 
-            int deptCount = categories.Count(c => (int?)c["level"] == 1);
-            int mine = string.IsNullOrWhiteSpace(token)
-                ? 0
-                : records.Count(r => string.Equals((string)r["token"], token, StringComparison.OrdinalIgnoreCase));
+            try
+            {
+                using (var conn = AppDb.Open())
+                {
+                    using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM Records", conn))
+                        records = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM Categories WHERE Level = 1 AND IsActive = 1", conn))
+                        departments = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM Tags", conn))
+                        tags = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        using (var cmd = new MySqlCommand("SELECT COUNT(*) FROM Records WHERE Token = @token", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@token", token);
+                            mine = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // AppDb connection string is a placeholder until the real Azure MySQL host is supplied.
+            }
 
             var result = new JObject
             {
-                ["records"] = records.Count,
-                ["departments"] = deptCount,
-                ["tags"] = tags.Count,
+                ["records"] = records,
+                ["departments"] = departments,
+                ["tags"] = tags,
                 ["mine"] = mine
             };
 

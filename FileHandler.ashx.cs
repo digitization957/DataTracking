@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Web;
 using DataTracking.Helpers;
-using Newtonsoft.Json.Linq;
+using MySqlConnector;
 
 namespace DataTracking
 {
@@ -27,24 +27,26 @@ namespace DataTracking
                 return;
             }
 
-            var records = JsonStore.Read("records.json") as JArray;
-            var record = records?.FirstOrDefault(r => string.Equals((string)r["id"], recordId, StringComparison.OrdinalIgnoreCase));
-            if (record == null)
-            {
-                context.Response.StatusCode = 404;
-                return;
-            }
+            string normalizedId = parsedId.ToString("N");
+            string originalName = null;
 
-            var fileEntry = (record["files"] as JArray)?
-                .FirstOrDefault(f => string.Equals((string)f["storedName"], storedName, StringComparison.OrdinalIgnoreCase));
-            if (fileEntry == null)
+            using (var conn = AppDb.Open())
+            using (var cmd = new MySqlCommand(
+                "SELECT OriginalName FROM RecordFiles WHERE RecordId = @rid AND StoredName = @sn LIMIT 1", conn))
             {
-                context.Response.StatusCode = 404;
-                return;
+                cmd.Parameters.AddWithValue("@rid", normalizedId);
+                cmd.Parameters.AddWithValue("@sn", storedName);
+                var result = cmd.ExecuteScalar();
+                if (result == null)
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
+                originalName = result.ToString();
             }
 
             string safeStoredName = Path.GetFileName(storedName);
-            string uploadRoot = context.Server.MapPath("~/App_Data/Uploads/" + parsedId.ToString("N"));
+            string uploadRoot = context.Server.MapPath("~/App_Data/Uploads/" + normalizedId);
             string filePath = Path.Combine(uploadRoot, safeStoredName);
 
             if (!Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(uploadRoot), StringComparison.OrdinalIgnoreCase) ||
@@ -54,7 +56,6 @@ namespace DataTracking
                 return;
             }
 
-            string originalName = (string)fileEntry["originalName"] ?? safeStoredName;
             string ext = Path.GetExtension(safeStoredName).ToLowerInvariant();
 
             context.Response.Clear();

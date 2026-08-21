@@ -26,7 +26,14 @@
                         </div>
                     </div>
                 </div>
-                <span class="user-chip" id="lblUser"></span>
+                <div class="nav-dropdown" id="userNav">
+                    <button type="button" class="nav-dropdown-toggle" id="userToggle"><span class="user-chip" id="lblUser"></span> <span class="chev">&#9662;</span></button>
+                    <div class="nav-dropdown-menu user-pop">
+                        <div class="user-pop-row"><span class="l">Role</span><span class="v" id="userRole">—</span></div>
+                        <hr />
+                        <a id="btnLogout">Logout</a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -89,24 +96,11 @@
     </form>
 
     <script src="Scripts/jquery-3.7.0.min.js"></script>
+    <script src="Scripts/auth.js"></script>
     <script>
         var categoryData = [];
         var selectedTags = [];
         var INLINE_EXT = ["pdf", "jpg", "jpeg", "png", "gif"];
-
-        function b64Decode(str) { return decodeURIComponent(escape(atob(str))); }
-
-        function requireAuth() {
-            var jwt = sessionStorage.getItem("dt_jwt");
-            if (!jwt) { window.location.href = "Login.aspx"; return null; }
-            try {
-                var parts = b64Decode(jwt).split("|");
-                return { token: parts[0] };
-            } catch (ex) {
-                window.location.href = "Login.aspx";
-                return null;
-            }
-        }
 
         function loadDropdown(sel, items) {
             sel.empty().append($("<option>").val("").text("-- Any --"));
@@ -127,11 +121,20 @@
                 e.stopPropagation();
                 $("#masterNav").toggleClass("open");
             });
-            $(document).on("click", function () { $("#masterNav").removeClass("open"); });
+            $("#userToggle").on("click", function (e) {
+                e.stopPropagation();
+                $("#userNav").toggleClass("open");
+            });
+            $(document).on("click", function () {
+                $("#masterNav").removeClass("open");
+                $("#userNav").removeClass("open");
+            });
 
-            var auth = requireAuth();
+            var auth = DTAuth.resolve();
             if (!auth) return;
             $("#lblUser").text(auth.token);
+            $("#userRole").text(auth.role || "Unknown");
+            $("#btnLogout").on("click", DTAuth.logout);
 
             $.ajax({
                 type: "POST", url: "Repository.aspx/GetCategories",
@@ -232,10 +235,10 @@
 
             function runSearch() {
                 var payload = {
-                    department: $("#ddl1 option:selected").text() === "-- Any --" ? "" : $("#ddl1 option:selected").text(),
-                    category: $("#ddl2 option:selected").text() === "-- Any --" ? "" : $("#ddl2 option:selected").text(),
-                    subCategory: $("#ddl3 option:selected").text() === "-- Any --" ? "" : $("#ddl3 option:selected").text(),
-                    type: $("#ddl4 option:selected").text() === "-- Any --" ? "" : $("#ddl4 option:selected").text(),
+                    department: $("#ddl1").val() || "",
+                    category: $("#ddl2").val() || "",
+                    subCategory: $("#ddl3").val() || "",
+                    type: $("#ddl4").val() || "",
                     subject: $("#txtSubject").val(),
                     tags: selectedTags,
                     dateFrom: $("#txtFrom").val(),

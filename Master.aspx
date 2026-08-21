@@ -26,7 +26,14 @@
                         </div>
                     </div>
                 </div>
-                <span class="user-chip" id="lblUser"></span>
+                <div class="nav-dropdown" id="userNav">
+                    <button type="button" class="nav-dropdown-toggle" id="userToggle"><span class="user-chip" id="lblUser"></span> <span class="chev">&#9662;</span></button>
+                    <div class="nav-dropdown-menu user-pop">
+                        <div class="user-pop-row"><span class="l">Role</span><span class="v" id="userRole">—</span></div>
+                        <hr />
+                        <a id="btnLogout">Logout</a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -86,24 +93,11 @@
     </form>
 
     <script src="Scripts/jquery-3.7.0.min.js"></script>
+    <script src="Scripts/auth.js"></script>
     <script>
         var LEVEL_NAME = { 1: "Department", 2: "Category", 3: "Sub-Category", 4: "Type" };
         var categoryData = [];
         var selected = { 1: null, 2: null, 3: null, 4: null };
-
-        function b64Decode(str) { return decodeURIComponent(escape(atob(str))); }
-
-        function requireAuth() {
-            var jwt = sessionStorage.getItem("dt_jwt");
-            if (!jwt) { window.location.href = "Login.aspx"; return null; }
-            try {
-                var parts = b64Decode(jwt).split("|");
-                return { token: parts[0] };
-            } catch (ex) {
-                window.location.href = "Login.aspx";
-                return null;
-            }
-        }
 
         function childrenOf(level, parentId) {
             return categoryData.filter(function (c) { return c.level === level && (c.parentId || null) === (parentId || null); });
@@ -216,11 +210,20 @@
                 e.stopPropagation();
                 $("#masterNav").toggleClass("open");
             });
-            $(document).on("click", function () { $("#masterNav").removeClass("open"); });
+            $("#userToggle").on("click", function (e) {
+                e.stopPropagation();
+                $("#userNav").toggleClass("open");
+            });
+            $(document).on("click", function () {
+                $("#masterNav").removeClass("open");
+                $("#userNav").removeClass("open");
+            });
 
-            var auth = requireAuth();
+            var auth = DTAuth.resolve();
             if (!auth) return;
             $("#lblUser").text(auth.token);
+            $("#userRole").text(auth.role || "Unknown");
+            $("#btnLogout").on("click", DTAuth.logout);
 
             for (var lvl = 1; lvl <= 4; lvl++) {
                 (function (level) {

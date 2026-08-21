@@ -1,9 +1,0 @@
-[
-  { "subject": "Q1 Vendor Invoice - Reliance Traders", "tags": ["invoice", "vendor", "q1"] },
-  { "subject": "Q2 Vendor Invoice - Tata Supplies", "tags": ["invoice", "vendor", "q2"] },
-  { "subject": "Annual Budget Approval 2025", "tags": ["budget", "approval", "annual"] },
-  { "subject": "Employee Offer Letter - John Mathew", "tags": ["offer", "hr", "recruitment"] },
-  { "subject": "NDA - Acme Corp Partnership", "tags": ["nda", "legal", "acme"] },
-  { "subject": "Salary Slip - March 2026", "tags": ["payroll", "salary", "march"] },
-  { "subject": "Shipment Delay Notice - Mumbai Port", "tags": ["logistics", "shipment", "delay"] }
-]

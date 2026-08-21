@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Web.Script.Services;
 using System.Web.Services;
 using DataTracking.Helpers;
+using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -19,7 +19,23 @@ namespace DataTracking
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public static string GetCategories()
         {
-            var data = JsonStore.Read("categories.json") as JArray ?? new JArray();
+            var data = new JArray();
+            using (var conn = AppDb.Open())
+            using (var cmd = new MySqlCommand(
+                "SELECT CategoryId, ParentId, Level, Name FROM Categories WHERE IsActive = 1 ORDER BY Level, Name", conn))
+            using (var rdr = cmd.ExecuteReader())
+            {
+                while (rdr.Read())
+                {
+                    data.Add(new JObject
+                    {
+                        ["id"] = rdr["CategoryId"].ToString(),
+                        ["parentId"] = rdr["ParentId"] == DBNull.Value ? null : rdr["ParentId"].ToString(),
+                        ["level"] = Convert.ToInt32(rdr["Level"]),
+                        ["name"] = rdr["Name"].ToString()
+                    });
+                }
+            }
             return JsonConvert.SerializeObject(data);
         }
 
@@ -32,69 +48,99 @@ namespace DataTracking
                 return JsonConvert.SerializeObject(new { success = false, message = "Enter a name up to 200 characters." });
             if (level < 1 || level > 4)
                 return JsonConvert.SerializeObject(new { success = false, message = "Invalid level." });
-            if (level > 1 && string.IsNullOrWhiteSpace(parentId))
-                return JsonConvert.SerializeObject(new { success = false, message = "Select a parent first." });
 
-            var data = JsonStore.Read("categories.json") as JArray ?? new JArray();
-
+            int? parentIdInt = null;
             if (level > 1)
             {
-                var parent = data.FirstOrDefault(c => string.Equals((string)c["id"], parentId, StringComparison.OrdinalIgnoreCase));
-                if (parent == null || (int)parent["level"] != level - 1)
-                    return JsonConvert.SerializeObject(new { success = false, message = "Parent not found." });
+                if (string.IsNullOrWhiteSpace(parentId) || !int.TryParse(parentId, out int pid))
+                    return JsonConvert.SerializeObject(new { success = false, message = "Select a parent first." });
+                parentIdInt = pid;
             }
 
-            string parentKey = level == 1 ? null : parentId;
-            bool duplicate = data.Any(c =>
-                (int)c["level"] == level &&
-                string.Equals((string)c["parentId"], parentKey, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals((string)c["name"], name, StringComparison.OrdinalIgnoreCase));
-            if (duplicate)
-                return JsonConvert.SerializeObject(new { success = false, message = "That option already exists here." });
-
-            var item = new JObject
+            using (var conn = AppDb.Open())
             {
-                ["id"] = Guid.NewGuid().ToString("N"),
-                ["level"] = level,
-                ["parentId"] = parentKey,
-                ["name"] = name
-            };
-            data.Add(item);
-            JsonStore.Write("categories.json", data);
+                if (parentIdInt.HasValue)
+                {
+                    using (var chk = new MySqlCommand("SELECT Level FROM Categories WHERE CategoryId = @id", conn))
+                    {
+                        chk.Parameters.AddWithValue("@id", parentIdInt.Value);
+                        var lvl = chk.ExecuteScalar();
+                        if (lvl == null || Convert.ToInt32(lvl) != level - 1)
+                            return JsonConvert.SerializeObject(new { success = false, message = "Parent not found." });
+                    }
+                }
 
-            return JsonConvert.SerializeObject(new { success = true, item = item });
+                using (var dup = new MySqlCommand(
+                    "SELECT COUNT(*) FROM Categories WHERE Level = @level AND Name = @name AND " +
+                    (parentIdInt.HasValue ? "ParentId = @parentId" : "ParentId IS NULL"), conn))
+                {
+                    dup.Parameters.AddWithValue("@level", level);
+                    dup.Parameters.AddWithValue("@name", name);
+                    if (parentIdInt.HasValue) dup.Parameters.AddWithValue("@parentId", parentIdInt.Value);
+                    if (Convert.ToInt32(dup.ExecuteScalar()) > 0)
+                        return JsonConvert.SerializeObject(new { success = false, message = "That option already exists here." });
+                }
+
+                using (var ins = new MySqlCommand(
+                    "INSERT INTO Categories (ParentId, Level, Name) VALUES (@parentId, @level, @name); SELECT LAST_INSERT_ID();", conn))
+                {
+                    ins.Parameters.AddWithValue("@parentId", (object)parentIdInt ?? DBNull.Value);
+                    ins.Parameters.AddWithValue("@level", level);
+                    ins.Parameters.AddWithValue("@name", name);
+                    var newId = Convert.ToInt32(ins.ExecuteScalar());
+
+                    var item = new JObject
+                    {
+                        ["id"] = newId.ToString(),
+                        ["level"] = level,
+                        ["parentId"] = parentIdInt.HasValue ? parentIdInt.Value.ToString() : null,
+                        ["name"] = name
+                    };
+                    return JsonConvert.SerializeObject(new { success = true, item });
+                }
+            }
         }
 
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public static string DeleteCategory(string id)
         {
-            if (string.IsNullOrWhiteSpace(id))
+            if (string.IsNullOrWhiteSpace(id) || !int.TryParse(id, out int catId))
                 return JsonConvert.SerializeObject(new { success = false, message = "Missing id." });
 
-            var data = JsonStore.Read("categories.json") as JArray ?? new JArray();
-
-            var toRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var frontier = new List<string> { id };
-            while (frontier.Count > 0)
+            using (var conn = AppDb.Open())
             {
-                var next = new List<string>();
-                foreach (var pid in frontier)
+                var toRemove = new HashSet<int> { catId };
+                var frontier = new List<int> { catId };
+                while (frontier.Count > 0)
                 {
-                    if (toRemove.Add(pid))
+                    var next = new List<int>();
+                    foreach (var pid in frontier)
                     {
-                        next.AddRange(data
-                            .Where(c => string.Equals((string)c["parentId"], pid, StringComparison.OrdinalIgnoreCase))
-                            .Select(c => (string)c["id"]));
+                        using (var cmd = new MySqlCommand("SELECT CategoryId FROM Categories WHERE ParentId = @pid", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@pid", pid);
+                            using (var rdr = cmd.ExecuteReader())
+                            {
+                                while (rdr.Read())
+                                {
+                                    int cid = Convert.ToInt32(rdr["CategoryId"]);
+                                    if (toRemove.Add(cid)) next.Add(cid);
+                                }
+                            }
+                        }
                     }
+                    frontier = next;
                 }
-                frontier = next;
+
+                using (var del = new MySqlCommand("DELETE FROM Categories WHERE CategoryId = @id", conn))
+                {
+                    del.Parameters.AddWithValue("@id", catId);
+                    del.ExecuteNonQuery();
+                }
+
+                return JsonConvert.SerializeObject(new { success = true, removed = toRemove.Count });
             }
-
-            var remaining = new JArray(data.Where(c => !toRemove.Contains((string)c["id"])));
-            JsonStore.Write("categories.json", remaining);
-
-            return JsonConvert.SerializeObject(new { success = true, removed = toRemove.Count });
         }
     }
 }

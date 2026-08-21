@@ -24,6 +24,10 @@
                     <label for="txtToken">Token</label>
                     <input type="text" id="txtToken" maxlength="100" placeholder="e.g. TOK-1001" autocomplete="off" />
                 </div>
+                <div class="field" style="margin-top:var(--space-sm);">
+                    <label for="txtRole">Role (dev only — normally comes from the JWT)</label>
+                    <input type="text" id="txtRole" maxlength="50" placeholder="e.g. Admin" autocomplete="off" />
+                </div>
                 <button type="button" id="btnLogin" class="btn btn-primary" style="width:100%;margin-top:var(--space-md);justify-content:center;">Login</button>
                 <div class="field-hint is-error" id="errMsg" style="display:none;margin-top:var(--space-sm);">Please enter your token.</div>
             </div>
@@ -32,13 +36,10 @@
 
     <script src="Scripts/jquery-3.7.0.min.js"></script>
     <script>
-        function b64Encode(str) {
-            return btoa(unescape(encodeURIComponent(str)));
-        }
-
         $(function () {
             $("#btnLogin").on("click", function () {
                 var token = $.trim($("#txtToken").val());
+                var role = $.trim($("#txtRole").val()) || "Unknown";
 
                 if (!token) {
                     $("#errMsg").show();
@@ -46,13 +47,7 @@
                 }
                 $("#errMsg").hide();
 
-                var payload = token + "|" + Date.now();
-                var jwt = b64Encode(payload);
-
-                sessionStorage.setItem("dt_token", token);
-                sessionStorage.setItem("dt_jwt", jwt);
-
-                window.location.href = "Dashboard.aspx?jwt=" + encodeURIComponent(jwt);
+                window.location.href = "Dashboard.aspx?token=" + encodeURIComponent(token) + "&role=" + encodeURIComponent(role);
             });
 
             $("#txtToken").on("keypress", function (e) {

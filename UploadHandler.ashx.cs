@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web;
 using DataTracking.Helpers;
+using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -34,16 +36,20 @@ namespace DataTracking
                 string category = request.Form["category"];
                 string subCategory = request.Form["subCategory"];
                 string type = request.Form["type"];
-                string subject = request.Form["subject"];
+                string subject = (request.Form["subject"] ?? "").Trim();
                 string remark = request.Form["remark"];
                 string tagsRaw = request.Form["tags"];
 
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    WriteError(context, "Missing token.");
+                    return;
+                }
                 if (string.IsNullOrWhiteSpace(subject))
                 {
                     WriteError(context, "Subject is required.");
                     return;
                 }
-
                 if (request.Files.Count == 0 || request.Files.Count > MaxFiles)
                 {
                     WriteError(context, "Attach between 1 and " + MaxFiles + " files.");
@@ -54,7 +60,7 @@ namespace DataTracking
                 var uploadRoot = context.Server.MapPath("~/App_Data/Uploads/" + recordId);
                 Directory.CreateDirectory(uploadRoot);
 
-                var savedFiles = new JArray();
+                var savedFiles = new List<(string original, string stored, string ext, long size)>();
 
                 for (int i = 0; i < request.Files.Count; i++)
                 {
@@ -77,38 +83,63 @@ namespace DataTracking
                     string savePath = Path.Combine(uploadRoot, safeName);
                     file.SaveAs(savePath);
 
-                    savedFiles.Add(new JObject
-                    {
-                        ["originalName"] = Path.GetFileName(file.FileName),
-                        ["storedName"] = safeName
-                    });
+                    savedFiles.Add((Path.GetFileName(file.FileName), safeName, ext, file.ContentLength));
                 }
 
-                var tags = string.IsNullOrWhiteSpace(tagsRaw)
-                    ? new JArray()
-                    : JArray.Parse(tagsRaw);
+                var tags = string.IsNullOrWhiteSpace(tagsRaw) ? new JArray() : JArray.Parse(tagsRaw);
 
-                var record = new JObject
+                using (var conn = AppDb.Open())
+                using (var tx = conn.BeginTransaction())
                 {
-                    ["id"] = recordId,
-                    ["token"] = token,
-                    ["department"] = department,
-                    ["category"] = category,
-                    ["subCategory"] = subCategory,
-                    ["type"] = type,
-                    ["subject"] = subject,
-                    ["remark"] = remark,
-                    ["tags"] = tags,
-                    ["files"] = savedFiles,
-                    ["createdOn"] = DateTime.UtcNow.ToString("o")
-                };
+                    int subjectId = UpsertSubject(conn, tx, subject);
+                    var tagIds = UpsertTags(conn, tx, tags);
+                    LinkSubjectTags(conn, tx, subjectId, tagIds);
 
-                var records = JsonStore.Read("records.json") as JArray ?? new JArray();
-                records.Add(record);
-                JsonStore.Write("records.json", records);
+                    using (var cmd = new MySqlCommand(@"
+                        INSERT INTO Records
+                            (RecordId, Token, DepartmentCategoryId, CategoryId, SubCategoryId, TypeCategoryId, SubjectId, Remark, CreatedOn)
+                        VALUES
+                            (@id, @token, @dept, @cat, @subcat, @type, @subject, @remark, UTC_TIMESTAMP())", conn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@id", recordId);
+                        cmd.Parameters.AddWithValue("@token", token);
+                        cmd.Parameters.AddWithValue("@dept", ParseIdOrNull(department));
+                        cmd.Parameters.AddWithValue("@cat", ParseIdOrNull(category));
+                        cmd.Parameters.AddWithValue("@subcat", ParseIdOrNull(subCategory));
+                        cmd.Parameters.AddWithValue("@type", ParseIdOrNull(type));
+                        cmd.Parameters.AddWithValue("@subject", subjectId);
+                        cmd.Parameters.AddWithValue("@remark", (object)remark ?? DBNull.Value);
+                        cmd.ExecuteNonQuery();
+                    }
 
-                UpsertSubject(subject, tags);
-                UpsertTags(tags);
+                    foreach (var f in savedFiles)
+                    {
+                        using (var fcmd = new MySqlCommand(@"
+                            INSERT INTO RecordFiles (RecordId, OriginalName, StoredName, FileExtension, FileSizeBytes)
+                            VALUES (@rid, @orig, @stored, @ext, @size)", conn, tx))
+                        {
+                            fcmd.Parameters.AddWithValue("@rid", recordId);
+                            fcmd.Parameters.AddWithValue("@orig", f.original);
+                            fcmd.Parameters.AddWithValue("@stored", f.stored);
+                            fcmd.Parameters.AddWithValue("@ext", f.ext);
+                            fcmd.Parameters.AddWithValue("@size", f.size);
+                            fcmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    foreach (var tagId in tagIds)
+                    {
+                        using (var rtcmd = new MySqlCommand(
+                            "INSERT IGNORE INTO RecordTags (RecordId, TagId) VALUES (@rid, @tid)", conn, tx))
+                        {
+                            rtcmd.Parameters.AddWithValue("@rid", recordId);
+                            rtcmd.Parameters.AddWithValue("@tid", tagId);
+                            rtcmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    tx.Commit();
+                }
 
                 context.Response.Write(JsonConvert.SerializeObject(new { success = true, id = recordId }));
             }
@@ -123,39 +154,69 @@ namespace DataTracking
             context.Response.Write(JsonConvert.SerializeObject(new { success = false, message }));
         }
 
-        private void UpsertSubject(string subject, JArray tags)
+        private static object ParseIdOrNull(string s)
         {
-            var subjects = JsonStore.Read("subjects.json") as JArray ?? new JArray();
-            var existing = subjects.FirstOrDefault(s =>
-                string.Equals(s["subject"]?.ToString(), subject, StringComparison.OrdinalIgnoreCase));
-
-            if (existing != null)
-            {
-                var existingTags = (existing["tags"] as JArray) ?? new JArray();
-                foreach (var t in tags)
-                {
-                    if (!existingTags.Any(x => string.Equals(x.ToString(), t.ToString(), StringComparison.OrdinalIgnoreCase)))
-                        existingTags.Add(t);
-                }
-                existing["tags"] = existingTags;
-            }
-            else
-            {
-                subjects.Add(new JObject { ["subject"] = subject, ["tags"] = tags });
-            }
-
-            JsonStore.Write("subjects.json", subjects);
+            return int.TryParse(s, out int v) ? (object)v : DBNull.Value;
         }
 
-        private void UpsertTags(JArray tags)
+        private static int UpsertSubject(MySqlConnection conn, MySqlTransaction tx, string subjectText)
         {
-            var master = JsonStore.Read("tags.json") as JArray ?? new JArray();
+            using (var sel = new MySqlCommand("SELECT SubjectId FROM Subjects WHERE SubjectText = @t", conn, tx))
+            {
+                sel.Parameters.AddWithValue("@t", subjectText);
+                var existing = sel.ExecuteScalar();
+                if (existing != null) return Convert.ToInt32(existing);
+            }
+            using (var ins = new MySqlCommand("INSERT INTO Subjects (SubjectText) VALUES (@t); SELECT LAST_INSERT_ID();", conn, tx))
+            {
+                ins.Parameters.AddWithValue("@t", subjectText);
+                return Convert.ToInt32(ins.ExecuteScalar());
+            }
+        }
+
+        private static List<int> UpsertTags(MySqlConnection conn, MySqlTransaction tx, JArray tags)
+        {
+            var ids = new List<int>();
             foreach (var t in tags)
             {
-                if (!master.Any(x => string.Equals(x.ToString(), t.ToString(), StringComparison.OrdinalIgnoreCase)))
-                    master.Add(t);
+                string name = t.ToString().Trim();
+                if (string.IsNullOrEmpty(name)) continue;
+
+                int id;
+                using (var sel = new MySqlCommand("SELECT TagId FROM Tags WHERE TagName = @n", conn, tx))
+                {
+                    sel.Parameters.AddWithValue("@n", name);
+                    var existing = sel.ExecuteScalar();
+                    if (existing != null)
+                    {
+                        id = Convert.ToInt32(existing);
+                    }
+                    else
+                    {
+                        using (var ins = new MySqlCommand("INSERT INTO Tags (TagName) VALUES (@n); SELECT LAST_INSERT_ID();", conn, tx))
+                        {
+                            ins.Parameters.AddWithValue("@n", name);
+                            id = Convert.ToInt32(ins.ExecuteScalar());
+                        }
+                    }
+                }
+                ids.Add(id);
             }
-            JsonStore.Write("tags.json", master);
+            return ids;
+        }
+
+        private static void LinkSubjectTags(MySqlConnection conn, MySqlTransaction tx, int subjectId, List<int> tagIds)
+        {
+            foreach (var tagId in tagIds)
+            {
+                using (var cmd = new MySqlCommand(
+                    "INSERT IGNORE INTO SubjectTags (SubjectId, TagId) VALUES (@s, @t)", conn, tx))
+                {
+                    cmd.Parameters.AddWithValue("@s", subjectId);
+                    cmd.Parameters.AddWithValue("@t", tagId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
     }
 }

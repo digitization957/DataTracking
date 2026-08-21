@@ -23,3 +23,11 @@ add a line bullet of what task u did in taskdown.md
  - dont plan, dont screenshot and all , see the code readit to see the state of the app
 
  - dont spend time behind u did it peorply or not at minute level, just complete ur task and let me check that i got as per my requirement or not
+
+
+ - the app should be optimuzed
+ - use hallmark skill for ui design
+ - use proper UX
+ - UI elements hsould be refined
+ - should be modular, optimized, fast, all funtions and seperated. 
+ 

@@ -26,8 +26,15 @@
                         </div>
                     </div>
                 </div>
-                <span class="user-chip" id="lblUser">Loading…</span>
-                <button type="button" id="btnLogout" class="btn btn-ghost btn-sm">Logout</button>
+                <div class="nav-dropdown" id="userNav">
+                    <button type="button" class="nav-dropdown-toggle" id="userToggle"><span class="user-chip" id="lblUser">Loading…</span> <span class="chev">&#9662;</span></button>
+                    <div class="nav-dropdown-menu user-pop">
+                        <div class="user-pop-row"><span class="l">Role</span><span class="v" id="userRole">—</span></div>
+                        <div class="user-pop-row"><span class="l">Token</span><span class="v mono" id="userToken">—</span></div>
+                        <hr />
+                        <a id="btnLogout">Logout</a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -51,41 +58,28 @@
     </form>
 
     <script src="Scripts/jquery-3.7.0.min.js"></script>
+    <script src="Scripts/auth.js"></script>
     <script>
-        function b64Decode(str) {
-            return decodeURIComponent(escape(atob(str)));
-        }
-
-        function getParam(name) {
-            var params = new URLSearchParams(window.location.search);
-            return params.get(name);
-        }
-
         $(function () {
             $("#masterToggle").on("click", function (e) {
                 e.stopPropagation();
                 $("#masterNav").toggleClass("open");
             });
-            $(document).on("click", function () { $("#masterNav").removeClass("open"); });
+            $("#userToggle").on("click", function (e) {
+                e.stopPropagation();
+                $("#userNav").toggleClass("open");
+            });
+            $(document).on("click", function () {
+                $("#masterNav").removeClass("open");
+                $("#userNav").removeClass("open");
+            });
 
-            var jwt = getParam("jwt") || sessionStorage.getItem("dt_jwt");
-            if (!jwt) {
-                window.location.href = "Login.aspx";
-                return;
-            }
+            var auth = DTAuth.resolve();
+            if (!auth) return;
+            var token = auth.token;
 
-            var parts;
-            try {
-                parts = b64Decode(jwt).split("|");
-            } catch (ex) {
-                window.location.href = "Login.aspx";
-                return;
-            }
-
-            var token = parts[0];
-
-            sessionStorage.setItem("dt_token", token);
-            sessionStorage.setItem("dt_jwt", jwt);
+            $("#userRole").text(auth.role || "Unknown");
+            $("#userToken").text(token);
 
             $.ajax({
                 type: "POST",
@@ -97,7 +91,7 @@
                     var data = JSON.parse(res.d);
                     if (data.found) {
                         $("#lblUser").text(data.name);
-                        $("#lblWelcome").text("Hello " + data.name + " (" + data.department + ").");
+                        $("#lblWelcome").text("Hello " + data.name + " (" + (auth.role || "Unknown") + ").");
                     } else {
                         $("#lblUser").text("Guest");
                         $("#lblWelcome").text("Token not recognized in records.");
@@ -126,10 +120,7 @@
                 }
             });
 
-            $("#btnLogout").on("click", function () {
-                sessionStorage.clear();
-                window.location.href = "Login.aspx";
-            });
+            $("#btnLogout").on("click", DTAuth.logout);
         });
     </script>
 </body>

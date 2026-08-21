@@ -5,18 +5,6 @@
    Replaces the dummy App_Data/*.json files used in the demo.
    ============================================================ */
 
-CREATE TABLE Users (
-    UserId          INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    Token           VARCHAR(100)    NOT NULL,
-    Name            VARCHAR(200)    NOT NULL,
-    Department      VARCHAR(100)    NULL,
-    Email           VARCHAR(200)    NULL,
-    DefaultRole     VARCHAR(50)     NULL,
-    IsActive        TINYINT(1)      NOT NULL DEFAULT 1,
-    CreatedOn       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY UQ_Users_Token (Token)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE Categories (
     CategoryId      INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ParentId        INT UNSIGNED    NULL,
@@ -54,7 +42,7 @@ CREATE TABLE SubjectTags (
 
 CREATE TABLE Records (
     RecordId              CHAR(32)      NOT NULL PRIMARY KEY,   -- GUID, hex-only (no dashes)
-    UserId                INT UNSIGNED  NOT NULL,
+    Token                 VARCHAR(100)  NOT NULL,  -- uploader's token; Name/Role resolved externally (LoginDb / JWT)
     DepartmentCategoryId  INT UNSIGNED  NULL,  -- level 1
     CategoryId             INT UNSIGNED  NULL,  -- level 2
     SubCategoryId          INT UNSIGNED  NULL,  -- level 3
@@ -62,7 +50,6 @@ CREATE TABLE Records (
     SubjectId              INT UNSIGNED  NOT NULL,
     Remark                 TEXT          NULL,
     CreatedOn              DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT FK_Records_User FOREIGN KEY (UserId) REFERENCES Users(UserId),
     CONSTRAINT FK_Records_Dept FOREIGN KEY (DepartmentCategoryId) REFERENCES Categories(CategoryId),
     CONSTRAINT FK_Records_Cat FOREIGN KEY (CategoryId) REFERENCES Categories(CategoryId),
     CONSTRAINT FK_Records_SubCat FOREIGN KEY (SubCategoryId) REFERENCES Categories(CategoryId),
@@ -70,7 +57,7 @@ CREATE TABLE Records (
     CONSTRAINT FK_Records_Subject FOREIGN KEY (SubjectId) REFERENCES Subjects(SubjectId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX IX_Records_SubjectId ON Records(SubjectId);
-CREATE INDEX IX_Records_UserId ON Records(UserId);
+CREATE INDEX IX_Records_Token ON Records(Token);
 CREATE INDEX IX_Records_CreatedOn ON Records(CreatedOn);
 
 CREATE TABLE RecordFiles (
