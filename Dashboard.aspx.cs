@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Web.Script.Services;
 using System.Web.Services;
 using DataTracking.Helpers;
@@ -85,6 +87,86 @@ namespace DataTracking
             };
 
             return JsonConvert.SerializeObject(result);
+        }
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public static string GetDashboardExtras()
+        {
+            var recent = new JArray();
+            var byDept = new JArray();
+
+            try
+            {
+                using (var conn = AppDb.Open())
+                {
+                    using (var cmd = new MySqlCommand(@"
+                        SELECT r.Token, r.CreatedOn, s.SubjectText,
+                               d.Name AS DeptName, c.Name AS CatName, sc.Name AS SubCatName, t.Name AS TypeName
+                        FROM Records r
+                        JOIN Subjects s ON s.SubjectId = r.SubjectId
+                        LEFT JOIN Categories d ON d.CategoryId = r.DepartmentCategoryId
+                        LEFT JOIN Categories c ON c.CategoryId = r.CategoryId
+                        LEFT JOIN Categories sc ON sc.CategoryId = r.SubCategoryId
+                        LEFT JOIN Categories t ON t.CategoryId = r.TypeCategoryId
+                        ORDER BY r.CreatedOn DESC
+                        LIMIT 5", conn))
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        var nameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        while (rdr.Read())
+                        {
+                            string token = rdr["Token"].ToString();
+                            if (!nameCache.TryGetValue(token, out string uploaderName))
+                            {
+                                try { uploaderName = LoginDb.GetNameByToken(token); }
+                                catch { uploaderName = null; }
+                                uploaderName = uploaderName ?? token;
+                                nameCache[token] = uploaderName;
+                            }
+
+                            var pathParts = new[]
+                            {
+                                rdr["DeptName"] as string, rdr["CatName"] as string,
+                                rdr["SubCatName"] as string, rdr["TypeName"] as string
+                            }.Where(p => !string.IsNullOrEmpty(p));
+
+                            recent.Add(new JObject
+                            {
+                                ["subject"] = rdr["SubjectText"].ToString(),
+                                ["path"] = string.Join(" / ", pathParts),
+                                ["uploaderName"] = uploaderName,
+                                ["createdOn"] = Convert.ToDateTime(rdr["CreatedOn"]).ToString("o")
+                            });
+                        }
+                    }
+
+                    using (var cmd = new MySqlCommand(@"
+                        SELECT d.Name AS DeptName, COUNT(*) AS Cnt
+                        FROM Records r
+                        JOIN Categories d ON d.CategoryId = r.DepartmentCategoryId
+                        GROUP BY d.Name
+                        ORDER BY Cnt DESC
+                        LIMIT 6", conn))
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        while (rdr.Read())
+                        {
+                            byDept.Add(new JObject
+                            {
+                                ["name"] = rdr["DeptName"].ToString(),
+                                ["count"] = Convert.ToInt32(rdr["Cnt"])
+                            });
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // AppDb connection string is a placeholder until the real Azure MySQL host is supplied.
+            }
+
+            return JsonConvert.SerializeObject(new { recent, byDepartment = byDept });
         }
     }
 }

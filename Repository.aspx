@@ -27,11 +27,23 @@
                     </div>
                 </div>
                 <div class="nav-dropdown" id="userNav">
-                    <button type="button" class="nav-dropdown-toggle" id="userToggle"><span class="user-chip" id="lblUser"></span> <span class="chev">&#9662;</span></button>
+                    <button type="button" class="user-trigger" id="userToggle">
+                        <span class="user-avatar" id="userAvatar">?</span>
+                        <span class="user-name" id="lblUser">Loading…</span>
+                        <span class="chev">&#9662;</span>
+                    </button>
                     <div class="nav-dropdown-menu user-pop">
-                        <div class="user-pop-row"><span class="l">Role</span><span class="v" id="userRole">—</span></div>
+                        <div class="user-pop-head">
+                            <span class="user-avatar user-avatar-lg" id="userAvatarLg">?</span>
+                            <div>
+                                <div class="user-pop-name" id="userPopName">Loading…</div>
+                                <div class="user-pop-sub" id="userPopRole">—</div>
+                            </div>
+                        </div>
                         <hr />
-                        <a id="btnLogout">Logout</a>
+                        <div class="user-pop-row"><span class="l">Token</span><span class="v mono" id="userToken">—</span></div>
+                        <hr />
+                        <button type="button" class="btn btn-outline btn-sm" id="btnLogout" style="width:100%;justify-content:center;">Logout</button>
                     </div>
                 </div>
             </div>
@@ -117,24 +129,23 @@
         }
 
         $(function () {
-            $("#masterToggle").on("click", function (e) {
-                e.stopPropagation();
-                $("#masterNav").toggleClass("open");
-            });
-            $("#userToggle").on("click", function (e) {
-                e.stopPropagation();
-                $("#userNav").toggleClass("open");
-            });
-            $(document).on("click", function () {
-                $("#masterNav").removeClass("open");
-                $("#userNav").removeClass("open");
-            });
+            DTAuth.bindDropdown("#masterToggle", "#masterNav");
+            DTAuth.bindDropdown("#userToggle", "#userNav");
+            DTAuth.bindGlobalDropdownClose();
 
             var auth = DTAuth.resolve();
             if (!auth) return;
-            $("#lblUser").text(auth.token);
-            $("#userRole").text(auth.role || "Unknown");
+            DTAuth.renderUserMenu(auth.token, auth.role, auth.token);
             $("#btnLogout").on("click", DTAuth.logout);
+
+            $.ajax({
+                type: "POST", url: "Dashboard.aspx/GetUserInfo",
+                data: JSON.stringify({ token: auth.token }), contentType: "application/json; charset=utf-8", dataType: "json",
+                success: function (res) {
+                    var data = JSON.parse(res.d);
+                    if (data.found) { DTAuth.renderUserMenu(data.name, auth.role, auth.token); }
+                }
+            });
 
             $.ajax({
                 type: "POST", url: "Repository.aspx/GetCategories",

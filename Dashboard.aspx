@@ -27,12 +27,23 @@
                     </div>
                 </div>
                 <div class="nav-dropdown" id="userNav">
-                    <button type="button" class="nav-dropdown-toggle" id="userToggle"><span class="user-chip" id="lblUser">Loading…</span> <span class="chev">&#9662;</span></button>
+                    <button type="button" class="user-trigger" id="userToggle">
+                        <span class="user-avatar" id="userAvatar">?</span>
+                        <span class="user-name" id="lblUser">Loading…</span>
+                        <span class="chev">&#9662;</span>
+                    </button>
                     <div class="nav-dropdown-menu user-pop">
-                        <div class="user-pop-row"><span class="l">Role</span><span class="v" id="userRole">—</span></div>
+                        <div class="user-pop-head">
+                            <span class="user-avatar user-avatar-lg" id="userAvatarLg">?</span>
+                            <div>
+                                <div class="user-pop-name" id="userPopName">Loading…</div>
+                                <div class="user-pop-sub" id="userPopRole">—</div>
+                            </div>
+                        </div>
+                        <hr />
                         <div class="user-pop-row"><span class="l">Token</span><span class="v mono" id="userToken">—</span></div>
                         <hr />
-                        <a id="btnLogout">Logout</a>
+                        <button type="button" class="btn btn-outline btn-sm" id="btnLogout" style="width:100%;justify-content:center;">Logout</button>
                     </div>
                 </div>
             </div>
@@ -54,6 +65,19 @@
                 <div class="stat-tile"><div class="n mono" id="statTags">—</div><div class="l">Known tags</div></div>
                 <div class="stat-tile"><div class="n mono" id="statMine">—</div><div class="l">Uploaded by you</div></div>
             </div>
+
+            <div class="dash-grid">
+                <div class="panel">
+                    <div class="panel-head-sm"><h3>Recent activity</h3></div>
+                    <div class="recent-list" id="recentList"></div>
+                    <div class="empty-note" id="recentEmpty" style="display:none;">No records yet.</div>
+                </div>
+                <div class="panel">
+                    <div class="panel-head-sm"><h3>By department</h3></div>
+                    <div class="dept-bars" id="deptBars"></div>
+                    <div class="empty-note" id="deptEmpty" style="display:none;">No records yet.</div>
+                </div>
+            </div>
         </div>
     </form>
 
@@ -61,25 +85,15 @@
     <script src="Scripts/auth.js"></script>
     <script>
         $(function () {
-            $("#masterToggle").on("click", function (e) {
-                e.stopPropagation();
-                $("#masterNav").toggleClass("open");
-            });
-            $("#userToggle").on("click", function (e) {
-                e.stopPropagation();
-                $("#userNav").toggleClass("open");
-            });
-            $(document).on("click", function () {
-                $("#masterNav").removeClass("open");
-                $("#userNav").removeClass("open");
-            });
+            DTAuth.bindDropdown("#masterToggle", "#masterNav");
+            DTAuth.bindDropdown("#userToggle", "#userNav");
+            DTAuth.bindGlobalDropdownClose();
 
             var auth = DTAuth.resolve();
             if (!auth) return;
             var token = auth.token;
 
-            $("#userRole").text(auth.role || "Unknown");
-            $("#userToken").text(token);
+            DTAuth.renderUserMenu(token, auth.role, token);
 
             $.ajax({
                 type: "POST",
@@ -90,10 +104,9 @@
                 success: function (res) {
                     var data = JSON.parse(res.d);
                     if (data.found) {
-                        $("#lblUser").text(data.name);
+                        DTAuth.renderUserMenu(data.name, auth.role, token);
                         $("#lblWelcome").text("Hello " + data.name + " (" + (auth.role || "Unknown") + ").");
                     } else {
-                        $("#lblUser").text("Guest");
                         $("#lblWelcome").text("Token not recognized in records.");
                     }
                 },
@@ -119,6 +132,48 @@
                     $(".stat-tile .n").text("—");
                 }
             });
+
+            $.ajax({
+                type: "POST",
+                url: "Dashboard.aspx/GetDashboardExtras",
+                data: "{}",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (res) {
+                    var d = JSON.parse(res.d);
+                    renderRecent(d.recent || []);
+                    renderDeptBars(d.byDepartment || []);
+                }
+            });
+
+            function renderRecent(list) {
+                var box = $("#recentList").empty();
+                $("#recentEmpty").toggle(list.length === 0);
+                list.forEach(function (r) {
+                    var row = $("<div>").addClass("recent-row");
+                    row.append($("<div>").addClass("subject").text(r.subject));
+                    var meta = (r.path || "Uncategorised") + " · " + r.uploaderName + " · " + new Date(r.createdOn).toLocaleString();
+                    row.append($("<div>").addClass("meta").text(meta));
+                    box.append(row);
+                });
+            }
+
+            function renderDeptBars(list) {
+                var box = $("#deptBars").empty();
+                $("#deptEmpty").toggle(list.length === 0);
+                var max = Math.max.apply(null, list.map(function (d) { return d.count; }).concat([1]));
+                list.forEach(function (d) {
+                    var row = $("<div>").addClass("dept-bar-row");
+                    var top = $("<div>").addClass("dept-bar-top");
+                    top.append($("<span>").addClass("name").text(d.name));
+                    top.append($("<span>").addClass("mono").text(d.count));
+                    row.append(top);
+                    var track = $("<div>").addClass("dept-bar-track");
+                    track.append($("<div>").addClass("dept-bar-fill").css("width", Math.round((d.count / max) * 100) + "%"));
+                    row.append(track);
+                    box.append(row);
+                });
+            }
 
             $("#btnLogout").on("click", DTAuth.logout);
         });

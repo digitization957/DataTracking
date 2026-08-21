@@ -53,5 +53,44 @@ var DTAuth = (function () {
         window.location.href = "Login.aspx";
     }
 
-    return { resolve: resolve, logout: logout };
+    function initials(label) {
+        if (!label) return "?";
+        var parts = String(label).trim().split(/\s+/);
+        var chars = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].slice(0, 2);
+        return chars.toUpperCase();
+    }
+
+    // Fills the shared user-menu markup (avatar, name, role, token) present on every page's topbar.
+    function renderUserMenu(name, role, token) {
+        var label = name || token;
+        var $ = window.jQuery;
+        $("#userAvatar, #userAvatarLg").text(initials(name || token));
+        $("#lblUser, #userPopName").text(label);
+        $("#userPopRole").text(role || "Unknown");
+        $("#userToken").text(token);
+    }
+
+    // Wires a nav-dropdown toggle button + click-outside-to-close, shared by Master/user menus.
+    function bindDropdown(toggleSelector, navSelector) {
+        var $ = window.jQuery;
+        $(toggleSelector).on("click", function (e) {
+            e.stopPropagation();
+            $(navSelector).toggleClass("open");
+        });
+    }
+
+    function bindGlobalDropdownClose() {
+        window.jQuery(document).on("click", function () {
+            window.jQuery(".nav-dropdown.open").removeClass("open");
+        });
+    }
+
+    return {
+        resolve: resolve,
+        logout: logout,
+        initials: initials,
+        renderUserMenu: renderUserMenu,
+        bindDropdown: bindDropdown,
+        bindGlobalDropdownClose: bindGlobalDropdownClose
+    };
 })();
