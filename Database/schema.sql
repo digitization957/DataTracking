@@ -5,6 +5,9 @@
    Replaces the dummy App_Data/*.json files used in the demo.
    ============================================================ */
 
+CREATE DATABASE IF NOT EXISTS datatracking CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE datatracking;
+
 CREATE TABLE Categories (
     CategoryId      INT UNSIGNED    NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ParentId        INT UNSIGNED    NULL,
